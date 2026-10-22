@@ -1,0 +1,2432 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InventoryFlow AI</title>
+  <style>
+    :root {
+      --bg: #06131f;
+      --bg-2: #0d1b2a;
+      --surface: rgba(15, 23, 42, 0.75);
+      --surface-strong: rgba(15, 23, 42, 0.92);
+      --card: rgba(18, 28, 42, 0.9);
+      --card-soft: rgba(17, 24, 39, 0.72);
+      --border: rgba(148, 163, 184, 0.22);
+      --text: #e5eefb;
+      --muted: #8aa3c6;
+      --primary: #74d5ff;
+      --primary-strong: #39a9ff;
+      --secondary: #8b5cf6;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #fb7185;
+      --shadow: 0 20px 40px rgba(13, 18, 32, 0.45);
+      --grid: rgba(148, 163, 184, 0.08);
+    }
+
+    body.light {
+      --bg: #edf5ff;
+      --bg-2: #dfefff;
+      --surface: rgba(255,255,255,0.85);
+      --surface-strong: rgba(255,255,255,0.95);
+      --card: rgba(255,255,255,0.88);
+      --card-soft: rgba(240,247,255,0.9);
+      --border: rgba(76, 95, 128, 0.14);
+      --text: #112240;
+      --muted: #5d7291;
+      --primary: #177ddc;
+      --primary-strong: #0b5fd1;
+      --secondary: #7c3aed;
+      --success: #0f9f69;
+      --warning: #c98b00;
+      --danger: #d0263c;
+      --shadow: 0 20px 35px rgba(43, 69, 102, 0.12);
+      --grid: rgba(78, 104, 140, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(116, 213, 255, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), transparent 34%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      color: var(--text);
+      font-family: Inter, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at center, black 50%, transparent 90%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      color: var(--text);
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .small { font-size: 0.76rem; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; overflow: hidden; white-space: nowrap; clip: rect(0 0 0 0);
+    }
+
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .login-card {
+      width: min(460px, 100%);
+      background: rgba(12, 24, 36, 0.86);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    body.light .login-card {
+      background: rgba(255,255,255,0.8);
+    }
+
+    .login-badge {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(116, 213, 255, 0.12);
+      color: var(--primary);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      border: 1px solid rgba(116,213,255,0.2);
+    }
+
+    .login-card h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+    }
+
+    .login-card p { margin: 0 0 20px; color: var(--muted); }
+
+    .form-stack { display: grid; gap: 12px; }
+    .field, .field-row { display: grid; gap: 10px; }
+    .field-row.two { grid-template-columns: 1fr 1fr; }
+
+    input, select, textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(116, 213, 255, 0.7);
+      box-shadow: 0 0 0 4px rgba(116, 213, 255, 0.12);
+    }
+
+    .btn {
+      border: none;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+      color: #06131f;
+      box-shadow: 0 12px 24px rgba(57,169,255,0.28);
+    }
+
+    .btn-secondary {
+      background: rgba(139, 92, 246, 0.12);
+      color: var(--text);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-success {
+      background: rgba(52, 211, 153, 0.14);
+      color: var(--success);
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+
+    .btn-warning {
+      background: rgba(251,191,36,0.12);
+      color: var(--warning);
+      border: 1px solid rgba(251,191,36,0.2);
+    }
+
+    .btn-danger {
+      background: rgba(251, 113, 133, 0.12);
+      color: var(--danger);
+      border: 1px solid rgba(251,113,133,0.2);
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      min-height: 100vh;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .sidebar {
+      width: 270px;
+      background: rgba(9, 17, 26, 0.72);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px 14px;
+      backdrop-filter: blur(18px);
+      position: sticky;
+      top: 18px;
+      height: calc(100vh - 36px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+
+    body.light .sidebar {
+      background: rgba(255,255,255,0.78);
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px 18px;
+      border-bottom: 1px solid rgba(148,163,184,0.18);
+      margin-bottom: 12px;
+    }
+
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, rgba(116,213,255,0.2), rgba(139,92,246,0.22));
+      color: var(--primary);
+      font-weight: 800;
+      border: 1px solid rgba(116,213,255,0.2);
+    }
+
+    .brand h2 {
+      margin: 0; font-size: 1.12rem;
+    }
+
+    .brand small { color: var(--muted); }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: none;
+      background: transparent;
+      border-radius: 12px;
+      padding: 11px 12px;
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .nav-btn.active,
+    .nav-btn:hover {
+      background: rgba(116,213,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(116,213,255,0.18);
+    }
+
+    .nav-btn .icon {
+      width: 20px; text-align: center;
+    }
+
+    .nav-spacer { flex: 1; }
+
+    .profile-chip {
+      margin-top: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 12px; border-radius: 16px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    }
+
+    .profile-chip .avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #02151d; font-weight: 800; display: grid; place-items: center;
+    }
+
+    .main-shell {
+      flex: 1;
+      display: flex; flex-direction: column; gap: 18px;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 18px 22px; border-radius: 20px;
+      background: rgba(9,17,26,0.66); border: 1px solid var(--border);
+      box-shadow: var(--shadow); backdrop-filter: blur(18px);
+    }
+
+    body.light .topbar {
+      background: rgba(255,255,255,0.78);
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      min-width: 260px; max-width: 420px; width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+    }
+
+    .search-box input {
+      border: none; background: transparent; padding: 0; width: 100%;
+    }
+
+    .icon-btn {
+      width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    }
+
+    .badge-dot {
+      position: relative;
+    }
+
+    .badge-dot::after {
+      content: attr(data-count);
+      position: absolute; right: -2px; top: -2px; min-width: 18px; height: 18px; padding: 0 5px;
+      border-radius: 999px; background: var(--danger); color: white; font-size: 0.62rem; display: grid; place-items: center;
+      font-weight: 700;
+    }
+
+    .view {
+      display: none;
+      animation: fadeUp 0.35s ease;
+      position: relative;
+    }
+
+    .view.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(13,19,32,0.9), rgba(25,78,120,0.8), rgba(82,54,163,0.76));
+      border: 1px solid rgba(116,213,255,0.2); border-radius: 28px;
+      padding: 24px 26px; box-shadow: 0 25px 50px rgba(10, 18, 29, 0.35);
+      position: relative; overflow: hidden;
+    }
+
+    body.light .hero {
+      background: linear-gradient(135deg, rgba(17,34,64,0.9), rgba(45,121,214,0.8));
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 260px; height: 260px; border-radius: 50%;
+      right: -60px; top: -70px; background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
+    }
+
+    .hero-grid {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; position: relative;
+    }
+
+    .hero-copy h1 {
+      margin: 0 0 6px; font-size: clamp(2.1rem, 3vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+    .hero-copy p { margin: 0; color: rgba(255,255,255,0.8); max-width: 760px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(116,213,255,0.12);
+      border: 1px solid rgba(116,213,255,0.2);
+      color: var(--primary);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .hero-badges {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;
+    }
+
+    .hero-badge {
+      padding: 7px 10px; border-radius: 999px; font-size: 0.72rem;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.9);
+    }
+
+    .hero-actions {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;
+    }
+
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(4, minmax(180px,1fr)); gap: 16px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: rgba(10,18,29,0.72); border: 1px solid var(--border); border-radius: 20px; padding: 18px 18px 16px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    body.light .card { background: rgba(255,255,255,0.82); }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 30px rgba(10, 18, 29, 0.28);
+    }
+
+    .kpi-label {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted);
+      font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    .kpi-icon {
+      width: 36px; height: 36px; display: grid; place-items: center;
+      border-radius: 10px; background: rgba(116,213,255,0.12); color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    .kpi-value {
+      font-size: clamp(1.8rem, 2vw, 2.4rem); font-weight: 800; margin: 14px 0 6px;
+    }
+
+    .kpi-foot {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .trend-up { color: var(--success); }
+    .trend-down { color: var(--danger); }
+    .trend-flat { color: var(--warning); }
+
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 12px;
+    }
+    .section-head h3 { margin: 0; font-size: 1.15rem; }
+
+    .layout-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+    .layout-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+    .layout-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+
+    .health-list { display: grid; gap: 12px; margin-top: 16px; }
+    .health-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 14px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); cursor: pointer;
+    }
+    .health-row.active { border-color: rgba(116,213,255,0.42); background: rgba(116,213,255,0.08); }
+    .service-name { display: flex; gap: 10px; align-items: center; }
+    .service-dot { width: 11px; height: 11px; border-radius: 50%; }
+    .service-dot.green { background: var(--success); }
+    .service-dot.warning { background: var(--warning); }
+    .service-dot.red { background: var(--danger); }
+
+    .ring {
+      width: 90px; height: 90px; border-radius: 50%; display: grid; place-items: center; position: relative; background: conic-gradient(var(--success) 0deg 300deg, rgba(148,163,184,0.2) 300deg 360deg);
+    }
+    .ring::before {
+      content: ""; position: absolute; inset: 10px; border-radius: 50%; background: rgba(7,15,24,0.82); border: 1px solid var(--border);
+    }
+    .ring span { position: relative; z-index: 1; font-weight: 700; }
+
+    .ring.warn { background: conic-gradient(var(--warning) 0deg 240deg, rgba(148,163,184,0.2) 240deg 360deg); }
+    .ring.danger { background: conic-gradient(var(--danger) 0deg 190deg, rgba(148,163,184,0.2) 190deg 360deg); }
+
+    .ai-panel {
+      border: 1px solid var(--border); border-radius: 20px; background: rgba(10,18,29,0.72); padding: 18px; box-shadow: var(--shadow);
+    }
+
+    .ai-status { display: inline-flex; align-items: center; gap: 10px; color: var(--success); font-weight: 700; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); box-shadow: 0 0 12px rgba(52,211,153,0.8); }
+
+    .insight-list { display: grid; gap: 10px; margin-top: 14px; }
+    .insight-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    }
+
+    .prompt-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+    }
+    .prompt-chip {
+      border-radius: 999px; padding: 8px 12px; font-size: 0.8rem; background: rgba(116,213,255,0.08); color: var(--text); border: 1px solid rgba(116,213,255,0.22);
+      cursor: pointer;
+    }
+
+    .ai-chatbox {
+      margin-top: 16px; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.02); overflow: hidden;
+    }
+    .chat-window {
+      min-height: 220px; max-height: 280px; overflow-y: auto; padding: 14px; display: grid; gap: 10px;
+    }
+    .chat-bubble {
+      max-width: 82%; padding: 10px 12px; border-radius: 14px; line-height: 1.5; font-size: 0.96rem;
+    }
+    .chat-bubble.user { margin-left: auto; background: linear-gradient(135deg, rgba(116,213,255,0.22), rgba(139,92,246,0.24)); border: 1px solid rgba(116,213,255,0.18); }
+    .chat-bubble.ai { background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
+    .typing { display: inline-flex; gap: 6px; align-items: center; }
+    .typing span {
+      width: 7px; height: 7px; display: block; background: var(--primary); border-radius: 50%; animation: blink 0.8s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes blink { 0%,100%{opacity:0.3; transform:translateY(0);} 50%{opacity:1; transform:translateY(-2px);} }
+
+    .chat-input-row { display: flex; gap: 10px; padding: 12px; border-top: 1px solid var(--border); }
+    .chat-input-row input { flex:1; }
+
+    .panel {
+      background: rgba(10,18,29,0.72); border: 1px solid var(--border); border-radius: 20px; padding: 18px; box-shadow: var(--shadow);
+    }
+    body.light .panel { background: rgba(255,255,255,0.82); }
+
+    .ticket-controls {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 14px;
+    }
+    .toolbar-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .toolbar-group input, .toolbar-group select { width: auto; min-width: 150px; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem;
+    }
+    th { color: var(--muted); font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    tbody tr:hover { background: rgba(116,213,255,0.04); }
+    .ticket-title { font-weight: 700; }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid transparent; font-size: 0.75rem; font-weight: 700;
+    }
+    .chip.low { background: rgba(52,211,153,0.12); color: var(--success); }
+    .chip.medium { background: rgba(251,191,36,0.12); color: var(--warning); }
+    .chip.high { background: rgba(251,113,133,0.12); color: var(--danger); }
+    .chip.critical { background: rgba(244,63,94,0.14); color: #ff7a94; }
+    .chip.open { background: rgba(116,213,255,0.12); color: var(--primary); }
+    .chip.assigned { background: rgba(139,92,246,0.12); color: #c6a1ff; }
+    .chip.inprogress { background: rgba(251,191,36,0.12); color: var(--warning); }
+    .chip.pending { background: rgba(96,165,250,0.12); color: #8ab7ff; }
+    .chip.resolved { background: rgba(52,211,153,0.12); color: var(--success); }
+    .chip.closed { background: rgba(148,163,184,0.12); color: var(--muted); }
+
+    .modal {
+      position: fixed; inset: 0; background: rgba(2,7,16,0.6); display: grid; place-items: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+      z-index: 50;
+    }
+    .modal.open { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      width: min(880px, 100%); max-height: 90vh; overflow: auto; background: rgba(10,18,29,0.92); border: 1px solid var(--border); border-radius: 24px; padding: 22px; box-shadow: var(--shadow);
+    }
+
+    .meeting-modal {
+      position: absolute; inset: 0; z-index: 10; display: none; place-items: center;
+      padding: 24px; background: rgba(2,7,16,0.68); overflow: auto;
+    }
+    .meeting-modal.open { display: grid; }
+    .meeting-modal-card {
+      width: min(560px, 100%); max-height: 90vh; overflow: auto;
+      padding: 22px; border: 1px solid var(--border); border-radius: 20px;
+      background: var(--surface-strong); box-shadow: var(--shadow);
+    }
+
+    .timeline {
+      display: grid; gap: 12px; margin-top: 16px;
+    }
+    .timeline-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 12px; border-left: 2px solid var(--border); margin-left: 8px;
+    }
+    .timeline-item.active { border-color: var(--success); }
+    .timeline-node {
+      width: 14px; height: 14px; border-radius: 50%; background: var(--border); transform: translateX(-15px); border: 3px solid rgba(10,18,29,0.92);
+    }
+    .timeline-item.active .timeline-node { background: var(--success); }
+
+    .metric-row {
+      display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 16px;
+    }
+    .mini-stat {
+      padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,0.03);
+    }
+
+    .sla-box {
+      padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(52,211,153,0.26); background: rgba(52,211,153,0.08); display: flex; justify-content: space-between; align-items: center;
+    }
+    .sla-box.warning { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); }
+    .sla-box.danger { border-color: rgba(251,113,133,0.3); background: rgba(251,113,133,0.08); }
+    .countdown { font-size: clamp(1.5rem, 2vw, 2.2rem); font-weight: 800; }
+
+    .incident-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
+    .incident-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .service-map {
+      display: grid; grid-template-columns: repeat(3, minmax(120px,1fr)); gap: 14px; margin-top: 12px;
+    }
+    .location-node {
+      border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,0.03); padding: 12px 10px; text-align: center; cursor: pointer; transition: 0.2s ease;
+    }
+    .location-node.active { border-color: rgba(116,213,255,0.4); background: rgba(116,213,255,0.08); }
+    .location-node .status {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px;
+    }
+    .status-good { background: var(--success); }
+    .status-warning { background: var(--warning); }
+    .status-danger { background: var(--danger); }
+
+    .stack { display: grid; gap: 12px; }
+    .list-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .list-row:last-child { border-bottom: none; }
+
+    .audit-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .log-list li { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .log-list li:last-child { border-bottom: none; }
+
+    .report-box {
+      border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,0.02); padding: 16px;
+    }
+
+    .chart-box {
+      height: 180px; border: 1px solid var(--border); border-radius: 16px; background: linear-gradient(180deg, rgba(116,213,255,0.08), rgba(255,255,255,0.02)); position: relative; overflow: hidden;
+    }
+    .bars {
+      position: absolute; inset: 20px 16px 14px 16px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    }
+    .bar {
+      flex: 1; border-radius: 10px 10px 0 0; background: linear-gradient(180deg, rgba(116,213,255,0.95), rgba(139,92,246,0.78)); animation: rise 0.8s ease;
+    }
+    @keyframes rise { from { height: 0; } }
+
+    .team-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    .team-card {
+      border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.03); padding: 16px;
+    }
+    .team-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .avatar-lg { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(116,213,255,0.25), rgba(139,92,246,0.2)); font-weight: 800; }
+    .badge { padding: 6px 10px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .badge.gold { background: rgba(251,191,36,0.12); color: var(--warning); }
+    .badge.silver { background: rgba(148,163,184,0.12); color: var(--muted); }
+    .badge.bronze { background: rgba(251,113,133,0.12); color: var(--danger); }
+
+    .automation-flow {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 18px;
+    }
+    .flow-node {
+      border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; background: rgba(255,255,255,0.02); min-width: 150px;
+    }
+    .flow-arrow { color: var(--muted); font-size: 1.2rem; }
+
+    .knowledge-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
+    .article-card {
+      padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,0.02);
+    }
+    .article-card h4 { margin: 0 0 8px; }
+    .article-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .rating { color: var(--warning); }
+
+    .assets-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    .asset-card { padding: 16px; border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,0.02); }
+    .asset-health {
+      width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--warning) 0deg 260deg, rgba(148,163,184,0.18) 260deg 360deg); margin-bottom: 10px; font-weight: 700;
+    }
+    .asset-health::before {
+      content: ""; position: absolute; opacity: 0;
+    }
+
+    .toast-stack {
+      position: fixed; top: 18px; right: 18px; display: grid; gap: 10px; z-index: 80;
+    }
+    .toast {
+      min-width: 260px; max-width: 360px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: rgba(10,18,29,0.9); color: var(--text); box-shadow: var(--shadow);
+      animation: slideInRight 0.25s ease;
+    }
+    @keyframes slideInRight { from { transform: translateX(25px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    @media (max-width: 1100px) {
+      .stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .layout-grid, .layout-grid-2, .layout-grid-3, .incident-grid, .knowledge-grid { grid-template-columns: 1fr; }
+      .team-grid, .assets-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 840px) {
+      .app-shell { padding: 12px; flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; }
+      .topbar { flex-wrap: wrap; }
+      .topbar-right { width: 100%; justify-content: space-between; }
+      .search-box { flex: 1; min-width: 0; }
+      .field-row.two { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .stat-grid, .team-grid, .assets-grid { grid-template-columns: 1fr; }
+      .hero-grid { flex-direction: column; align-items: flex-start; }
+      .hero-actions { width: 100%; }
+      .ticket-controls { flex-direction: column; }
+      .toolbar-group { width: 100%; }
+      .toolbar-group input, .toolbar-group select { flex: 1; }
+      .service-map { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .chat-input-row { flex-direction: column; }
+      .meeting-modal { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <span class="login-badge">Business Inventory Intelligence</span>
+      <h1>InventoryFlow AI</h1>
+      <p>Unified stock intelligence for purchasing, warehouse operations, and business planning.</p>
+      <form id="loginForm" class="form-stack">
+        <div class="field"><input id="emailInput" type="email" placeholder="Email" required /></div>
+        <div class="field"><input id="passwordInput" type="password" placeholder="Password" required /></div>
+        <div class="field"><select id="roleInput"><option value="Admin">Admin</option><option value="Procurement Lead">Procurement Lead</option><option value="Operations Manager">Operations Manager</option></select></div>
+        <button type="submit" class="btn btn-primary">Login to dashboard</button>
+      </form>
+      <p class="small muted" style="margin-top: 12px;">Demo access: admin@inventoryflow.demo / admin123</p>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">I</div>
+        <div>
+          <h2>InventoryFlow AI</h2>
+          <small>Business Operations</small>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-btn active" data-view="dashboard"><span class="icon">▣</span> Overview</button>
+        <button class="nav-btn" data-view="ai-command"><span class="icon">✦</span> AI Insights</button>
+        <button class="nav-btn" data-view="tickets"><span class="icon">☰</span> Stock Items</button>
+        <button class="nav-btn" data-view="incidents"><span class="icon">⚡</span> Supply Alerts</button>
+        <button class="nav-btn" data-view="assets"><span class="icon">◫</span> Warehouses</button>
+        <button class="nav-btn" data-view="knowledge"><span class="icon">⌁</span> Catalog</button>
+        <button class="nav-btn" data-view="analytics"><span class="icon">◔</span> Demand</button>
+        <button class="nav-btn" data-view="automation"><span class="icon">⇄</span> Replenishment</button>
+        <button class="nav-btn" data-view="team"><span class="icon">◎</span> Team</button>
+        <button class="nav-btn" data-view="reports"><span class="icon">▤</span> Reports</button>
+        <button class="nav-btn" data-view="rooms"><span class="icon">◧</span> Rooms</button>
+        <button class="nav-btn" data-view="insights"><span class="icon">✦</span> Forecasts</button>
+        <button class="nav-btn" data-view="data-history"><span class="icon">▤</span> Data history</button>
+        <button class="nav-btn" data-view="settings"><span class="icon">⚙</span> Settings</button>
+      </nav>
+
+      <div class="nav-spacer"></div>
+
+      <div class="profile-chip">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="avatar" id="avatarCircle">A</div>
+          <div>
+            <strong id="sidebarUser">Admin</strong><br>
+            <span class="small muted" id="sidebarRole">Admin</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost" id="logoutBtn" type="button">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-shell">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div>
+            <div class="small muted">Good afternoon 👋</div>
+            <strong id="greetingText">Inventory operations overview</strong>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <label class="search-box" aria-label="Global search">
+            <span>⌕</span>
+            <input id="globalSearch" type="search" placeholder="Search tickets, assets, articles..." />
+          </label>
+          <button class="icon-btn badge-dot" data-count="4" id="notificationBtn" type="button" aria-label="Notifications">🔔</button>
+          <button class="icon-btn" id="themeToggle" type="button" aria-label="Theme toggle">☀️</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="hero">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <div class="eyebrow">AI-powered inventory OS</div>
+              <h1>InventoryFlow AI</h1>
+              <p>Here’s what’s happening across your inventory network. AI is spotting demand spikes, monitoring stock health, and preventing shortages before they impact revenue and operations.</p>
+              <div class="hero-badges">
+                <span class="hero-badge">Predictive</span>
+                <span class="hero-badge">Automated</span>
+                <span class="hero-badge">User-centric</span>
+                <span class="hero-badge">Scalable</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn btn-secondary" type="button" id="runDemoBtn">Run AI Demo</button>
+              <button class="btn btn-primary" type="button" onclick="openTicketForm()">Create Stock Request</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="kpiGrid"></div>
+
+        <div class="section-head">
+          <h3>Inventory Health Center</h3>
+          <button class="btn btn-ghost" type="button">Overall score: 94/100</button>
+        </div>
+
+        <div class="layout-grid">
+          <div class="panel">
+            <div class="ring" id="overallHealthRing"><span>94%</span></div>
+            <div class="health-list" id="healthList"></div>
+          </div>
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">Warehouse details</h3>
+            <div id="healthDetail"></div>
+          </div>
+        </div>
+
+        <div class="section-head">
+          <h3>Stock Priority Snapshot</h3>
+          <button class="btn btn-ghost" type="button">Realtime</button>
+        </div>
+
+        <div class="layout-grid-2">
+          <div class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Ticket</th><th>Category</th><th>Priority</th><th>Status</th></tr>
+                </thead>
+                <tbody id="dashboardTicketsTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">AI purchase recommendations</h3>
+            <div id="dashboardRecommendations" class="insight-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="ai-command" class="view">
+        <div class="section-head">
+          <h3>AI DEMAND COMMAND CENTER</h3>
+          <span class="ai-status"><span class="status-dot"></span> ONLINE</span>
+        </div>
+
+        <div class="layout-grid">
+          <div class="ai-panel">
+            <div class="insight-list" id="aiInsightsList"></div>
+            <div class="prompt-grid" id="promptGrid"></div>
+            <div class="ai-chatbox">
+              <div class="chat-window" id="chatWindow"></div>
+              <div class="chat-input-row">
+                <input id="aiPromptInput" type="text" placeholder="Ask ServiceHub AI anything..." />
+                <button class="btn btn-primary" type="button" id="aiSubmitBtn">Ask</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">AI stock analysis</h3>
+            <form id="ticketAnalysisForm" class="form-stack">
+              <div class="field"><input name="title" placeholder="Item or SKU" required></div>
+              <div class="field"><textarea name="description" rows="4" placeholder="Describe the supply issue or demand spike" required></textarea></div>
+              <div class="field-row two">
+                <input name="quantity" type="number" min="0" placeholder="Current quantity" required>
+                <input name="reorderLevel" type="number" min="0" placeholder="Reorder level" required>
+              </div>
+              <div class="field"><input name="leadTimeDays" type="number" min="0" step="0.5" placeholder="Supplier lead time (days)" value="7"></div>
+              <div class="field-row two">
+                <input name="location" placeholder="Location" />
+                <input name="asset" placeholder="Asset" />
+              </div>
+              <div class="field"><select name="department"><option value="IT">IT</option><option value="Network Operations">Network Operations</option><option value="Facilities">Facilities</option><option value="Security">Security</option><option value="Finance">Finance</option><option value="HR">HR</option></select></div>
+              <button class="btn btn-primary" type="submit">Analyze request</button>
+            </form>
+            <div class="toolbar-group" style="margin-top:12px;">
+              <button class="btn btn-secondary" type="button" id="trainModelBtn">Train and test model</button>
+            </div>
+            <div id="modelTestResult" class="hidden" style="margin-top:14px;"></div>
+            <div id="aiAnalysisResult" class="hidden" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);">
+              <div class="small muted">AI ANALYSIS</div>
+              <div id="analysisContent"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tickets" class="view">
+        <div class="section-head">
+          <h3>Inventory Item Management</h3>
+          <button class="btn btn-primary" type="button" onclick="openTicketForm()">New Inventory Request</button>
+        </div>
+
+        <div class="panel">
+          <div class="ticket-controls">
+            <div class="toolbar-group">
+              <input id="ticketSearch" type="search" placeholder="Search tickets" />
+              <select id="ticketStatusFilter">
+                <option value="all">All statuses</option>
+                <option>Open</option>
+                <option>Assigned</option>
+                <option>In Progress</option>
+                <option>Pending</option>
+                <option>Resolved</option>
+                <option>Closed</option>
+              </select>
+              <select id="ticketPriorityFilter">
+                <option value="all">All priorities</option>
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+              <select id="ticketDepartmentFilter">
+                <option value="all">All departments</option>
+                <option>IT</option>
+                <option>Network Operations</option>
+                <option>Security</option>
+                <option>Finance</option>
+                <option>HR</option>
+              </select>
+            </div>
+            <div class="toolbar-group">
+              <button class="btn btn-ghost" type="button" id="sortBtn">Sort: Newest</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>User</th>
+                  <th>Department</th>
+                  <th>Category</th>
+                  <th>Qty</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>SLA</th>
+                  <th>AI</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="ticketTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 18px;">
+          <div class="section-head" style="margin-top: 0;">
+            <h3>Live Inventory Catalog</h3>
+            <button class="btn btn-ghost" type="button">Auto-synced</button>
+          </div>
+          <form id="inventoryItemForm" class="form-stack" style="margin-bottom:18px;">
+            <div class="field-row two">
+              <input name="name" placeholder="Item name" required />
+              <input name="sku" placeholder="SKU / product code" required />
+            </div>
+            <div class="field-row two">
+              <input name="category" placeholder="Category" required />
+              <input name="warehouse" placeholder="Warehouse" required />
+            </div>
+            <div class="field-row two">
+              <input name="quantity" type="number" min="0" placeholder="Quantity on hand" required />
+              <input name="reorderLevel" type="number" min="0" placeholder="Reorder level" required />
+            </div>
+            <div class="field-row two">
+              <input name="supplier" placeholder="Supplier" required />
+              <input name="leadTimeDays" type="number" min="0" step="0.5" placeholder="Lead time (days)" value="7" required />
+            </div>
+            <div class="field-row two">
+              <input name="unitPrice" type="number" min="0" step="0.01" placeholder="Unit price" required />
+              <button class="btn btn-primary" type="submit">Store inventory item</button>
+            </div>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th>Warehouse</th>
+                  <th>Qty</th>
+                  <th>Reorder</th>
+                  <th>Unit price</th>
+                  <th>Supplier</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="incidents" class="view">
+        <div class="section-head">
+          <h3>SUPPLY ALERT CENTER</h3>
+          <button class="btn btn-danger" type="button">Resolve alert</button>
+        </div>
+
+        <div class="incident-grid">
+          <div class="panel">
+            <div class="incident-header">
+              <div>
+                <div class="small muted">INV-1042</div>
+                <h3 style="margin: 8px 0 0;">Critical raw material shortage</h3>
+              </div>
+              <span class="chip critical">CRITICAL</span>
+            </div>
+
+            <div class="metric-row">
+              <div class="mini-stat">
+                <div class="small muted">At-risk SKUs</div>
+                <div class="kpi-value" style="font-size:1.5rem; margin: 8px 0 0;">1,247</div>
+              </div>
+              <div class="mini-stat">
+                <div class="small muted">Affected sites</div>
+                <div class="kpi-value" style="font-size:1.5rem; margin: 8px 0 0;">6</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <div class="small muted">Alert timeline</div>
+              <div class="timeline">
+                <div class="timeline-item active"><div class="timeline-node"></div><div><strong>10:42</strong> Demand spike detected</div></div>
+                <div class="timeline-item active"><div class="timeline-node"></div><div><strong>10:43</strong> AI classified shortage risk</div></div>
+                <div class="timeline-item active"><div class="timeline-node"></div><div><strong>10:44</strong> Procurement lead notified</div></div>
+                <div class="timeline-item active"><div class="timeline-node"></div><div><strong>10:46</strong> Supplier escalation opened</div></div>
+                <div class="timeline-item"><div class="timeline-node"></div><div><strong>10:51</strong> Alternative source identified</div></div>
+                <div class="timeline-item"><div class="timeline-node"></div><div><strong>10:55</strong> Reorder workflow triggered</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="small muted">AI diagnosis</div>
+            <p style="margin: 10px 0 0;">Supplier lead time has extended beyond the reorder window, creating a likely stockout risk in the North warehouse.</p>
+
+            <div class="small muted" style="margin-top: 16px;">AI recommended action</div>
+            <p style="margin: 8px 0 0; font-weight:600;">Prioritize alternative sourcing and trigger automated replenishment for the affected category.</p>
+
+            <div class="sla-box danger" style="margin-top: 18px;">
+              <div>
+                <div class="small muted">SLA countdown</div>
+                <div class="countdown" id="incidentSla">00:42:17</div>
+              </div>
+              <span class="chip critical">Breach risk</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="layout-grid-2" style="margin-top: 18px;">
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">Response team</h3>
+            <ul class="stack">
+              <li class="list-row"><span>Priya Nair</span><span>Procurement</span></li>
+              <li class="list-row"><span>Marco Silva</span><span>Warehouse Ops</span></li>
+              <li class="list-row"><span>Amol Mehta</span><span>Logistics</span></li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">Ops updates</h3>
+            <div class="stack">
+              <div class="list-row"><span>Supplier escalated</span><span>10:44</span></div>
+              <div class="list-row"><span>Reorder rule activated</span><span>10:46</span></div>
+              <div class="list-row"><span>Regional warehouse briefed</span><span>10:49</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="assets" class="view">
+        <div class="section-head">
+          <h3>Warehouse Intelligence</h3>
+          <button class="btn btn-ghost" type="button">Demo data</button>
+        </div>
+        <div class="assets-grid" id="assetsGrid"></div>
+      </section>
+
+      <section id="knowledge" class="view">
+        <div class="section-head">
+          <h3>Knowledge Base</h3>
+          <button class="btn btn-ghost" type="button">Searchable</button>
+        </div>
+        <div class="knowledge-grid">
+          <div class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Article</th><th>Category</th><th>Helpful Rating</th></tr></thead>
+                <tbody id="knowledgeTable"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <h3 style="margin:0 0 12px;">AI recommendations</h3>
+            <div class="stack" id="knowledgeInsights"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="analytics" class="view">
+        <div class="section-head">
+          <h3>Demand Forecasting</h3>
+          <button class="btn btn-ghost" type="button">DEMO MODEL</button>
+        </div>
+
+        <div class="layout-grid-3" id="predictionGrid"></div>
+
+        <div class="layout-grid" style="margin-top:18px;">
+          <div class="panel">
+            <h3 style="margin:0 0 12px;">Business Impact</h3>
+            <div class="chart-box">
+              <div class="bars" id="impactBars"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3 style="margin:0 0 12px;">XLA / Experience Score</h3>
+            <div class="ring" style="width:120px;height:120px; margin-bottom:16px;"><span>88</span></div>
+            <ul class="stack">
+              <li class="list-row"><span>Resolution Speed</span><span>89</span></li>
+              <li class="list-row"><span>Response Quality</span><span>92</span></li>
+              <li class="list-row"><span>Ease of Resolution</span><span>84</span></li>
+              <li class="list-row"><span>User Satisfaction</span><span>90</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="automation" class="view">
+        <div class="section-head">
+          <h3>Replenishment Studio</h3>
+          <button class="btn btn-primary" type="button">Add rule</button>
+        </div>
+        <div class="panel">
+          <div class="automation-flow" id="automationFlow"></div>
+        </div>
+      </section>
+
+      <section id="team" class="view">
+        <div class="section-head">
+          <h3>Team / Agent Dashboard</h3>
+          <button class="btn btn-ghost" type="button">Leaderboard</button>
+        </div>
+        <div class="team-grid" id="teamGrid"></div>
+      </section>
+
+      <section id="reports" class="view">
+        <div class="section-head">
+          <h3>Business Reports</h3>
+          <button class="btn btn-primary" type="button">Generate Report</button>
+        </div>
+        <div class="layout-grid-2">
+          <div class="panel">
+            <div class="report-box">
+              <div class="small muted">Daily Report</div>
+              <h4 style="margin: 8px 0;">Operational summary</h4>
+              <ul class="stack">
+                <li class="list-row"><span>Tickets resolved</span><span>42</span></li>
+                <li class="list-row"><span>AI-assisted resolutions</span><span>19</span></li>
+                <li class="list-row"><span>Average resolution time</span><span>2.4h</span></li>
+                <li class="list-row"><span>SLA compliance</span><span>94.2%</span></li>
+              </ul>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="report-box">
+              <div class="small muted">AI Governance</div>
+              <h4 style="margin: 8px 0;">Security & compliance</h4>
+              <ul class="log-list">
+                <li>Authentication protected by RBAC access rules</li>
+                <li>AI decision history retained for audit trails</li>
+                <li>Human review recommended for low-confidence decisions</li>
+                <li>TODO: connect export/PDF generation backend</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="insights" class="view">
+        <div class="section-head">
+          <h3>AI Forecast Insights</h3>
+          <button class="btn btn-ghost" type="button">Live recommendations</button>
+        </div>
+
+        <div class="layout-grid-2">
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">Business impact</h3>
+            <ul class="stack" id="impactList"></ul>
+          </div>
+          <div class="panel">
+            <h3 style="margin: 0 0 12px;">AI governance</h3>
+            <div class="audit-grid">
+              <ul class="log-list">
+                <li>Admin changed priority</li>
+                <li>Agent updated ticket</li>
+                <li>AI classified ticket</li>
+              </ul>
+              <ul class="log-list">
+                <li>Ticket assigned</li>
+                <li>Ticket resolved</li>
+                <li>Data privacy review passed</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="data-history" class="view">
+        <div class="section-head">
+          <h3>Stored inputs and outputs</h3>
+          <button class="btn btn-ghost" type="button" id="refreshHistoryBtn">Refresh history</button>
+        </div>
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Operation</th><th>Saved input</th><th>Saved output</th></tr></thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="rooms" class="view">
+        <div class="section-head">
+          <h3>Business Rooms & QR Access</h3>
+          <button class="btn btn-primary" type="button" id="addRoomBtn">Add room</button>
+        </div>
+
+        <div class="layout-grid-2">
+          <div class="panel">
+            <div class="room-grid" id="roomGrid"></div>
+          </div>
+
+          <div class="panel">
+            <div class="qr-panel">
+              <div class="small muted">Meeting access check-in</div>
+              <div class="qr-code" id="qrCode"></div>
+              <div class="qr-meta">
+                <strong id="qrRoomLabel">Boardroom A</strong>
+                <span class="small muted">Scan to join the live business call</span>
+              </div>
+              <div class="quick-actions">
+                <button class="btn btn-primary" type="button" id="startRoomCallBtn">Start call</button>
+                <button class="btn btn-ghost" type="button" id="shareRoomInviteBtn">Share invite</button>
+              </div>
+
+              <div class="meeting-detail" id="meetingDetail"></div>
+            </div>
+          </div>
+        </div>
+
+      <div id="meetingModal" class="meeting-modal" aria-modal="true" role="dialog">
+        <div class="meeting-modal-card">
+          <div class="section-head" style="margin-top:0;">
+            <h3 id="meetingModalTitle">Room booking</h3>
+            <button class="btn btn-ghost" type="button" id="closeMeetingModalBtn">Close</button>
+          </div>
+          <div class="form-stack">
+            <div class="field"><input id="meetingTitleInput" placeholder="Meeting title" value="Business call" /></div>
+            <div class="field-row two">
+              <input id="meetingDateInput" type="date" />
+              <input id="meetingTimeInput" type="time" value="09:30" />
+            </div>
+            <div class="field-row two">
+              <select id="meetingDurationSelect">
+                <option>30 min</option>
+                <option selected>45 min</option>
+                <option>60 min</option>
+              </select>
+              <select id="meetingAccessSelect">
+                <option>QR + passcode</option>
+                <option>QR + email invite</option>
+                <option>QR + room code</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" type="button" id="confirmBookingBtn">Confirm booking</button>
+          </div>
+        </div>
+      </div>
+      </section>
+
+      <section id="settings" class="view">
+        <div class="section-head">
+          <h3>Settings</h3>
+        </div>
+        <div class="layout-grid-2">
+          <div class="panel">
+            <h3 style="margin:0 0 12px;">Business profile</h3>
+            <form id="profileForm" class="form-stack">
+              <div class="field"><input id="businessNameInput" value="InventoryFlow AI" /></div>
+              <div class="field-row two"><input id="currencyInput" value="USD" /><input id="taxInput" value="18" /></div>
+              <button class="btn btn-primary" type="submit">Save profile</button>
+            </form>
+          </div>
+          <div class="panel">
+            <h3 style="margin:0 0 12px;">Notification center</h3>
+            <ul class="stack" id="notificationList"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="ticketModal" class="modal" aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="section-head" style="margin-top:0;">
+        <h3 id="ticketModalTitle">Stock Request Details</h3>
+        <button class="btn btn-ghost" type="button" id="closeModalBtn">Close</button>
+      </div>
+      <div id="ticketDetailContent"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const initialTickets = [
+      { id: 'INV1042', title: 'Raw material stock below reorder threshold', user: 'Ariana D.', department: 'Procurement', category: 'Raw Materials', priority: 'Critical', status: 'In Progress', assigned: 'Maya Singh', created: '2026-09-10 09:15', updated: '2026-09-10 10:05', sla: '00:42:17', location: 'Warehouse North', asset: 'Steel Coil A-18', aiConfidence: 94, quantity: 142, reorderLevel: 240, supplier: 'Atlas Metals Ltd.', leadTime: '12 days', description: 'Inventory is falling below forecasted consumption and supplier lead time has increased.' },
+      { id: 'INV1043', title: 'Packaging boxes low in dispatch zone', user: 'Noah B.', department: 'Operations', category: 'Packaging', priority: 'Medium', status: 'Assigned', assigned: 'Jason Wu', created: '2026-09-10 08:20', updated: '2026-09-10 08:50', sla: '04:38:12', location: 'Dispatch Hub', asset: 'Carton Box 12x12', aiConfidence: 88, quantity: 368, reorderLevel: 520, supplier: 'Boxline Supply', leadTime: '7 days', description: 'Stock count indicates fewer than two days of packaging inventory remains.' },
+      { id: 'INV1044', title: 'Electronics parts replenishment delay', user: 'Leah M.', department: 'Finance', category: 'Electronics', priority: 'High', status: 'Pending', assigned: 'Sana Ali', created: '2026-09-10 07:05', updated: '2026-09-10 08:15', sla: '06:12:08', location: 'Central Store', asset: 'Microcontroller Batch 7', aiConfidence: 91, quantity: 210, reorderLevel: 340, supplier: 'CircuitLink', leadTime: '16 days', description: 'Supplier lead time for the critical electronics batch has slipped beyond target.' },
+      { id: 'INV1045', title: 'Office consumables overstock warning', user: 'Rohan P.', department: 'Facilities', category: 'Office Supplies', priority: 'Low', status: 'Resolved', assigned: 'Nina Q.', created: '2026-09-09 16:20', updated: '2026-09-09 17:05', sla: '21:57:10', location: 'HQ Annex', asset: 'Printer Cartridges', aiConfidence: 85, quantity: 860, reorderLevel: 420, supplier: 'OfficeCore', leadTime: '4 days', description: 'Two-week demand projection suggests a surplus and recommends reallocation to regional sites.' }
+    ];
+
+    const initialInventory = [
+      { id: 'SKU-1001', name: 'Steel Coil A-18', sku: 'STL-018', category: 'Raw Materials', quantity: 142, reorderLevel: 240, warehouse: 'Warehouse North', supplier: 'Atlas Metals Ltd.', status: 'Low stock' },
+      { id: 'SKU-1002', name: 'Carton Box 12x12', sku: 'PKG-112', category: 'Packaging', quantity: 368, reorderLevel: 520, warehouse: 'Dispatch Hub', supplier: 'Boxline Supply', status: 'Monitor' },
+      { id: 'SKU-1003', name: 'Microcontroller Batch 7', sku: 'ELE-207', category: 'Electronics', quantity: 210, reorderLevel: 340, warehouse: 'Central Store', supplier: 'CircuitLink', status: 'Reorder' },
+      { id: 'SKU-1004', name: 'Printer Cartridges', sku: 'OFF-410', category: 'Office Supplies', quantity: 860, reorderLevel: 420, warehouse: 'HQ Annex', supplier: 'OfficeCore', status: 'Healthy' }
+    ];
+
+    const state = {
+      loggedIn: false,
+      theme: 'dark',
+      tickets: JSON.parse(localStorage.getItem('inventoryFlowTickets') || 'null') || initialTickets,
+      inventoryItems: JSON.parse(localStorage.getItem('inventoryFlowProducts') || 'null') || initialInventory,
+      searchQuery: '',
+      statusFilter: 'all',
+      priorityFilter: 'all',
+      departmentFilter: 'all',
+      sortDirection: 'desc',
+      activeTicketId: initialTickets[0].id,
+      apiBase: window.INVENTORYFLOW_API_BASE || 'http://127.0.0.1:8001/api',
+      notifications: [
+        'New ticket assigned to Network Ops',
+        'SLA warning: Ticket SD1024 approaching breach',
+        'Critical incident: University network outage',
+        'AI recommendation: schedule printer maintenance'
+      ]
+    };
+
+    const healthProfiles = {
+      IT: { score: 96, status: 'Operational', detail: 'Core service stack stable. Only one non-critical item needs attention.' },
+      Network: { score: 96, status: 'Operational', detail: 'Edge traffic volumes are elevated but within acceptable service thresholds.' },
+      Hardware: { score: 82, status: 'Attention Required', detail: 'Printer fleet and meeting room projectors are showing elevated failure risk.' },
+      HR: { score: 89, status: 'Operational', detail: 'HR systems remain stable; onboarding flows are within expected latency.' },
+      Finance: { score: 87, status: 'Monitoring', detail: 'Finance access sees small sync delays but no full-service disruption.' },
+      Security: { score: 90, status: 'Operational', detail: 'Security policies are stable; no major alerts found in 24h window.' }
+    };
+
+    const demoInsights = [
+      '3 inventory categories require immediate restock attention',
+      '7 SKUs are approaching stockout risk',
+      'Demand for electronics parts increased this week',
+      '12 replenishment actions can be automated',
+      'Packaging shortages show a rising risk pattern'
+    ];
+
+    const demoPrompts = [
+      'Which items are at risk of stockout?',
+      'What suppliers need immediate follow-up?',
+      'Which warehouse is overstocked?',
+      'What can be automated for replenishment?',
+      'Show me this week\'s biggest inventory risks.'
+    ];
+
+    let roomData = [
+      { name: 'Boardroom A', type: 'Executive', seats: 12, status: 'Available', time: '09:30 AM', floor: '2nd Floor', qrId: 'BRD-A-204' },
+      { name: 'Client Lounge', type: 'Hybrid', seats: 8, status: 'Busy', time: '11:00 AM', floor: 'Lobby', qrId: 'CLG-H-101' },
+      { name: 'Focus Pod 3', type: 'Private', seats: 4, status: 'Available', time: '03:15 PM', floor: '3rd Floor', qrId: 'FP3-303' },
+      { name: 'Town Hall', type: 'Team', seats: 20, status: 'Available', time: '05:00 PM', floor: '4th Floor', qrId: 'THL-410' }
+    ];
+
+    let roomMeetings = {
+      'Boardroom A': { host: 'Alicia Stone', agenda: 'Executive inventory review', attendees: '8 invited', duration: '45 min', nextSlot: '09:30 AM', access: 'QR + passcode', meetingId: 'INV-2048' },
+      'Client Lounge': { host: 'Liam Foster', agenda: 'Vendor check-in and demo', attendees: '5 invited', duration: '30 min', nextSlot: '11:00 AM', access: 'QR + email invite', meetingId: 'CLT-1180' },
+      'Focus Pod 3': { host: 'Maya Patel', agenda: 'One-to-one sync', attendees: '2 invited', duration: '20 min', nextSlot: '03:15 PM', access: 'QR + direct link', meetingId: 'FP3-4401' },
+      'Town Hall': { host: 'Operations Team', agenda: 'Weekly business call', attendees: '18 invited', duration: '60 min', nextSlot: '05:00 PM', access: 'QR + room code', meetingId: 'THL-6611' }
+    };
+
+    let roomBookingState = {
+      activeRoom: 'Boardroom A',
+      calendar: {
+        'Boardroom A': [
+          { date: '2026-09-10', time: '09:30', duration: '45 min', title: 'Executive inventory review' },
+          { date: '2026-09-10', time: '12:00', duration: '30 min', title: 'Supplier sync' }
+        ],
+        'Client Lounge': [
+          { date: '2026-09-10', time: '11:00', duration: '30 min', title: 'Vendor check-in' }
+        ],
+        'Focus Pod 3': [
+          { date: '2026-09-10', time: '15:15', duration: '20 min', title: 'One-to-one sync' }
+        ],
+        'Town Hall': [
+          { date: '2026-09-10', time: '17:00', duration: '60 min', title: 'Weekly business call' }
+        ]
+      }
+    };
+
+    function saveTickets() {
+      localStorage.setItem('inventoryFlowTickets', JSON.stringify(state.tickets));
+      fetch(`${state.apiBase}/tickets`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state.tickets)
+      }).catch(error => console.warn('Could not sync requests to backend:', error.message));
+    }
+
+    async function syncRoomsToBackend() {
+      try {
+        await fetch(`${state.apiBase}/rooms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rooms: roomData,
+            meetings: roomMeetings,
+            calendar: roomBookingState.calendar
+          })
+        });
+      } catch (error) {
+        console.warn('Could not sync room data to backend:', error.message);
+      }
+    }
+
+    async function loadRoomsFromBackend() {
+      try {
+        const response = await fetch(`${state.apiBase}/rooms`);
+        if (!response.ok) throw new Error('Room API failed');
+        const data = await response.json();
+        if (Array.isArray(data.rooms) && data.rooms.length) {
+          roomData = data.rooms;
+          roomMeetings = data.meetings || roomMeetings;
+          roomBookingState.calendar = data.calendar || roomBookingState.calendar;
+        }
+      } catch (error) {
+        console.warn('Using local room data fallback:', error.message);
+      }
+    }
+
+    async function fetchInventoryFromAPI() {
+      try {
+        const response = await fetch(`${state.apiBase}/items`);
+        if (!response.ok) throw new Error('API failed');
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          state.inventoryItems = data;
+          localStorage.setItem('inventoryFlowProducts', JSON.stringify(data));
+        }
+      } catch (error) {
+        console.warn('Using local fallback inventory data:', error.message);
+      }
+    }
+
+    async function fetchTicketsFromAPI() {
+      try {
+        const response = await fetch(`${state.apiBase}/tickets`);
+        if (!response.ok) throw new Error('Ticket API failed');
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          state.tickets = data;
+          localStorage.setItem('inventoryFlowTickets', JSON.stringify(data));
+        }
+      } catch (error) {
+        console.warn('Using local fallback request data:', error.message);
+      }
+    }
+
+    async function saveInventory() {
+      localStorage.setItem('inventoryFlowProducts', JSON.stringify(state.inventoryItems));
+      try {
+        const response = await fetch(`${state.apiBase}/items`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state.inventoryItems)
+        });
+        if (!response.ok) throw new Error(`Inventory API returned ${response.status}`);
+        return true;
+      } catch (error) {
+        console.warn('Could not sync inventory to backend:', error.message);
+        return false;
+      }
+    }
+
+    function showToast(message, tone = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.borderColor = tone === 'success' ? 'rgba(52,211,153,0.35)' : tone === 'danger' ? 'rgba(251,113,133,0.35)' : 'rgba(116,213,255,0.35)';
+      toast.textContent = message;
+      document.getElementById('toastStack').appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function renderKPIs() {
+      const lowStockCount = state.inventoryItems.filter(item => item.quantity <= item.reorderLevel).length;
+      const totalUnits = state.inventoryItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+      const inventoryValue = state.inventoryItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+      const onTimeRate = '96.4%';
+      const kpis = [
+        { label: 'Inventory Items', value: state.inventoryItems.length, change: 'Stored items', trend: 'flat', icon: '☰' },
+        { label: 'Low Stock SKUs', value: lowStockCount, change: '+7.2%', trend: 'up', icon: '◌' },
+        { label: 'Open Reorders', value: '14', change: '-2.1%', trend: 'down', icon: '⚠' },
+        { label: 'On-time Delivery', value: onTimeRate, change: '+4.8%', trend: 'up', icon: '✓' },
+        { label: 'Inventory Value', value: `$${inventoryValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, change: `${totalUnits.toLocaleString()} units`, trend: 'up', icon: '◎' },
+        { label: 'Avg Lead Time', value: '9.4d', change: '-1.2d', trend: 'down', icon: '◔' },
+        { label: 'Order Fill Rate', value: '92%', change: '+3.6%', trend: 'up', icon: '★' },
+        { label: 'Automation Rate', value: '41%', change: '+8.1%', trend: 'up', icon: '⇄' }
+      ];
+
+      document.getElementById('kpiGrid').innerHTML = kpis.map(kpi => `
+        <div class="card">
+          <div class="kpi-label">
+            <span>${kpi.label}</span>
+            <span class="kpi-icon">${kpi.icon}</span>
+          </div>
+          <div class="kpi-value">${kpi.value}</div>
+          <div class="kpi-foot">
+            <span class="${kpi.trend === 'up' ? 'trend-up' : kpi.trend === 'down' ? 'trend-down' : 'trend-flat'}">${kpi.change}</span>
+            <span>this month</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderHealth() {
+      const healthList = document.getElementById('healthList');
+      const detail = document.getElementById('healthDetail');
+      const entries = Object.entries(healthProfiles);
+      const overall = Math.round(entries.reduce((sum, [_, v]) => sum + v.score, 0) / entries.length);
+      const ring = document.getElementById('overallHealthRing');
+      ring.style.background = `conic-gradient(var(--success) 0deg ${overall * 3.6}deg, rgba(148,163,184,0.18) ${overall * 3.6}deg 360deg)`;
+      ring.innerHTML = `<span>${overall}%</span>`;
+
+      healthList.innerHTML = entries.map(([name, info]) => `
+        <div class="health-row ${name === 'Network' ? 'active' : ''}" data-service="${name}">
+          <div class="service-name">
+            <span class="service-dot ${info.status === 'Attention Required' ? 'orange' : 'green'}" style="background:${info.status === 'Attention Required' ? 'var(--warning)' : 'var(--success)'}"></span>
+            <div>
+              <strong>${name}</strong>
+              <div class="small muted">${info.status}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong>${info.score}%</strong>
+            <span class="small muted">${info.status}</span>
+          </div>
+        </div>
+      `).join('');
+
+      detail.innerHTML = `
+        <div class="ring warn" style="width:110px;height:110px; margin:0 auto 16px;">
+          <span>${healthProfiles.Network.score}%</span>
+        </div>
+        <div class="small muted">Network</div>
+        <h4 style="margin: 8px 0;">Operational</h4>
+        <p class="muted">${healthProfiles.Network.detail}</p>
+        <div class="metric-row">
+          <div class="mini-stat"><div class="small muted">Requests</div><strong>48.2k</strong></div>
+          <div class="mini-stat"><div class="small muted">Latency</div><strong>240ms</strong></div>
+        </div>
+      `;
+
+      healthList.querySelectorAll('.health-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const service = row.dataset.service;
+          const info = healthProfiles[service];
+          detail.innerHTML = `
+            <div class="ring ${info.status === 'Attention Required' ? 'warn' : ''}" style="width:110px;height:110px; margin:0 auto 16px;">
+              <span>${info.score}%</span>
+            </div>
+            <div class="small muted">${service}</div>
+            <h4 style="margin: 8px 0;">${info.status}</h4>
+            <p class="muted">${info.detail}</p>
+            <div class="metric-row">
+              <div class="mini-stat"><div class="small muted">Requests</div><strong>31.2k</strong></div>
+              <div class="mini-stat"><div class="small muted">Alerts</div><strong>${service === 'Hardware' ? '8' : '2'}</strong></div>
+            </div>
+          `;
+          healthList.querySelectorAll('.health-row').forEach(el => el.classList.remove('active'));
+          row.classList.add('active');
+        });
+      });
+    }
+
+    function renderDashboardTables() {
+      const rows = state.tickets.slice(0, 4).map(ticket => `
+        <tr onclick="openTicket('${ticket.id}')" style="cursor:pointer;">
+          <td><div class="ticket-title">${ticket.title}</div><div class="small muted">${ticket.id}</div></td>
+          <td>${ticket.category}</td>
+          <td><span class="chip ${ticket.priority.toLowerCase().replace(' ', '')}">${ticket.priority}</span></td>
+          <td><span class="chip ${ticket.status.toLowerCase().replace(' ', '')}">${ticket.status}</span></td>
+        </tr>
+      `).join('');
+      document.getElementById('dashboardTicketsTable').innerHTML = rows;
+
+      document.getElementById('dashboardRecommendations').innerHTML = [
+        'Reorder steel coil before the quarter close to avoid a potential production gap.',
+        'Increase packaging shipments to the dispatch hub to cover the upcoming sales surge.',
+        'Escalate procurement review for the electronics supplier with rising lead times and risk score.',
+        'Reallocate office consumables across regional sites to reduce overstock and optimize cash flow.'
+      ].map(item => `<div class="insight-item"><span>✦</span><div>${item}</div></div>`).join('');
+    }
+
+    function renderAIInsights() {
+      document.getElementById('aiInsightsList').innerHTML = demoInsights.map(item => `
+        <div class="insight-item"><span>✦</span><div>${item}</div></div>
+      `).join('');
+
+      document.getElementById('promptGrid').innerHTML = demoPrompts.map(prompt => `<button type="button" class="prompt-chip">${prompt}</button>`).join('');
+      document.querySelectorAll('.prompt-chip').forEach(btn => btn.addEventListener('click', () => {
+        document.getElementById('aiPromptInput').value = btn.textContent;
+        sendAIMessage();
+      }));
+
+      const chatWindow = document.getElementById('chatWindow');
+      chatWindow.innerHTML = `
+        <div class="chat-bubble ai">InventoryFlow AI is tracking warehouse health, demand patterns, and supplier risk across the business. I can help prioritize stock actions, flag shortages, and recommend automated replenishment.</div>
+        <div class="chat-bubble user">Which items need immediate attention?</div>
+        <div class="chat-bubble ai">INV1042, INV1044, and INV1061 are the top priority inventory alerts. 2 are tied to supply shortages and 1 reflects a demand spike with high revenue impact.</div>
+      `;
+    }
+
+    function sendAIMessage() {
+      const input = document.getElementById('aiPromptInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chatWindow = document.getElementById('chatWindow');
+      chatWindow.innerHTML += `<div class="chat-bubble user">${message}</div>`;
+      input.value = '';
+      const loader = document.createElement('div');
+      loader.className = 'chat-bubble ai';
+      loader.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+      chatWindow.appendChild(loader);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      setTimeout(() => {
+        let response = 'I analyzed the current inventory data. The most likely issue is a rising demand pattern in electronics and a supply bottleneck in raw materials for the next cycle.';
+        const lower = message.toLowerCase();
+        if (lower.includes('stock') || lower.includes('risk')) response = 'High-risk inventory is clustered in Packaging, Steel Coil, and High-Value Electronics. Approx. 22% of SKUs are below target safety stock.';
+        if (lower.includes('immediate') || lower.includes('priority')) response = 'Immediate attention is required for INV1042 (critical raw material shortage), INV1044 (electronic parts delay), and INV1061 (shipping shortage).';
+        if (lower.includes('supplier') || lower.includes('warehouse')) response = 'Supplier lead times are rising for two critical vendors, while the North warehouse shows a 13% overstock risk on packaging stock.';
+        if (lower.includes('automate') || lower.includes('replenishment')) response = 'Automated reorder workflows can cover 12 stock alerts, especially for packaging, accessories, and MRO components.';
+        if (lower.includes('problem') || lower.includes('week')) response = 'The top issue this week is raw material shortage risk, followed by packaging gaps and a slow electronics supplier response.';
+
+        loader.innerHTML = `<div class="chat-bubble ai">${response}<div class="small muted" style="margin-top:8px;">Confidence: 92% (DEMO)</div></div>`;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }, 900);
+    }
+
+    function openTicketForm() {
+      document.getElementById('ticketModalTitle').textContent = 'Create Stock Request';
+      document.getElementById('ticketDetailContent').innerHTML = `
+        <form id="newTicketForm" class="form-stack">
+          <div class="field-row two">
+            <input name="title" placeholder="Item / SKU" required />
+            <input name="location" placeholder="Warehouse" required />
+          </div>
+          <div class="field-row two">
+            <input name="asset" placeholder="Supplier" required />
+            <select name="department"><option>Procurement</option><option>Operations</option><option>Finance</option><option>Logistics</option><option>Facilities</option><option>HR</option></select>
+          </div>
+          <div class="field-row two">
+            <input name="quantity" type="number" min="1" placeholder="Current quantity" required />
+            <input name="reorderLevel" type="number" min="1" placeholder="Reorder level" required />
+          </div>
+          <div class="field"><textarea name="description" rows="4" placeholder="Describe the stock issue or replenishment need" required></textarea></div>
+          <div class="field-row two">
+            <select name="priority"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+            <input name="user" placeholder="Requester" required />
+          </div>
+          <button class="btn btn-primary" type="submit">Create Request</button>
+        </form>
+      `;
+      document.getElementById('newTicketForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const form = new FormData(event.target);
+        const newTicket = {
+          id: 'INV' + (1000 + state.tickets.length + 1),
+          title: form.get('title'),
+          user: form.get('user'),
+          department: form.get('department'),
+          category: 'General',
+          priority: form.get('priority'),
+          status: 'Open',
+          assigned: 'Unassigned',
+          created: new Date().toISOString().slice(0, 16).replace('T', ' '),
+          updated: new Date().toISOString().slice(0, 16).replace('T', ' '),
+          sla: getSlaForPriority(form.get('priority')),
+          location: form.get('location'),
+          asset: form.get('asset'),
+          aiConfidence: 92,
+          quantity: Number(form.get('quantity')) || 0,
+          reorderLevel: Number(form.get('reorderLevel')) || 0,
+          supplier: form.get('asset') || 'TBD',
+          leadTime: '7–10 days',
+          description: form.get('description')
+        };
+        state.tickets.unshift(newTicket);
+        state.inventoryItems.unshift({
+          id: `SKU-${Date.now().toString().slice(-5)}`,
+          name: newTicket.title,
+          sku: `INV-${Date.now().toString().slice(-6)}`,
+          category: newTicket.category,
+          quantity: Number(form.get('quantity')) || 0,
+          reorderLevel: Number(form.get('reorderLevel')) || 0,
+          warehouse: newTicket.location,
+          supplier: newTicket.asset,
+          status: (Number(form.get('quantity')) || 0) <= (Number(form.get('reorderLevel')) || 0) ? 'Low stock' : 'Healthy'
+        });
+        saveTickets();
+        saveInventory();
+        renderAll();
+        closeModal();
+        showToast('Stock request created and queued for AI triage', 'success');
+      });
+      openModal();
+    }
+
+    function openTicket(id) {
+      const ticket = state.tickets.find(item => item.id === id) || state.tickets[0];
+      state.activeTicketId = ticket.id;
+      document.getElementById('ticketModalTitle').textContent = `Stock Request ${ticket.id}`;
+      document.getElementById('ticketDetailContent').innerHTML = `
+        <div class="layout-grid">
+          <div>
+            <div class="small muted">AI Analysis</div>
+            <div class="metric-row">
+              <div class="mini-stat"><div class="small muted">Category</div><strong>${ticket.category}</strong></div>
+              <div class="mini-stat"><div class="small muted">Priority</div><strong>${ticket.priority}</strong></div>
+              <div class="mini-stat"><div class="small muted">Current qty</div><strong>${ticket.quantity || 0}</strong></div>
+              <div class="mini-stat"><div class="small muted">Reorder level</div><strong>${ticket.reorderLevel || 0}</strong></div>
+              <div class="mini-stat"><div class="small muted">Supplier</div><strong>${ticket.supplier || 'TBD'}</strong></div>
+              <div class="mini-stat"><div class="small muted">Lead time</div><strong>${ticket.leadTime || 'N/A'}</strong></div>
+            </div>
+
+            <div class="timeline" style="margin-top: 18px;">
+              <div class="timeline-item active"><div class="timeline-node"></div><div><strong>Request Created</strong><br>${ticket.created}</div></div>
+              <div class="timeline-item active"><div class="timeline-node"></div><div><strong>AI Classified</strong><br>${ticket.category} • ${ticket.priority}</div></div>
+              <div class="timeline-item active"><div class="timeline-node"></div><div><strong>Assigned</strong><br>${ticket.assigned}</div></div>
+              <div class="timeline-item active"><div class="timeline-node"></div><div><strong>Inventory check</strong><br>${ticket.location}</div></div>
+              <div class="timeline-item"><div class="timeline-node"></div><div><strong>Resolution</strong><br>Pending replenishment</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="sla-box ${ticket.priority === 'Critical' ? 'danger' : ticket.priority === 'High' ? 'warning' : ''}">
+              <div>
+                <div class="small muted">SLA remaining</div>
+                <div class="countdown">${ticket.sla}</div>
+              </div>
+              <span class="chip ${ticket.priority.toLowerCase().replace(' ', '')}">${ticket.priority}</span>
+            </div>
+            <div style="margin-top: 16px;">
+              <div class="small muted">Business note</div>
+              <textarea rows="4" style="margin-top:8px;">Current consumption is above the forecasted baseline. Inventory is trending below safe stock and could impact upstream production if not replenished within the next cycle.</textarea>
+            </div>
+            <div style="margin-top: 16px;">
+              <div class="small muted">Internal recommendation</div>
+              <div class="mini-stat" style="margin-top:8px;">AI recommends reordering before the next delivery cycle and validating a backup supplier for this material category.</div>
+            </div>
+          </div>
+        </div>
+      `;
+      openModal();
+    }
+
+    function renderTicketTable() {
+      const filtered = state.tickets.filter(ticket => {
+        const search = state.searchQuery.toLowerCase();
+        const matchesSearch = !search || [ticket.title, ticket.user, ticket.department, ticket.category, ticket.location].join(' ').toLowerCase().includes(search);
+        const matchesStatus = state.statusFilter === 'all' || ticket.status === state.statusFilter;
+        const matchesPriority = state.priorityFilter === 'all' || ticket.priority === state.priorityFilter;
+        const matchesDepartment = state.departmentFilter === 'all' || ticket.department === state.departmentFilter;
+        return matchesSearch && matchesStatus && matchesPriority && matchesDepartment;
+      });
+
+      const sorted = [...filtered].sort((a,b) => {
+        const dateA = new Date(a.created).getTime();
+        const dateB = new Date(b.created).getTime();
+        return state.sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+
+      document.getElementById('ticketTableBody').innerHTML = sorted.map(ticket => `
+        <tr>
+          <td><div class="ticket-title">${ticket.title}</div><div class="small muted">${ticket.id}</div></td>
+          <td>${ticket.user}</td>
+          <td>${ticket.department}</td>
+          <td>${ticket.category}</td>
+          <td>${ticket.quantity || 0}</td>
+          <td><span class="chip ${ticket.priority.toLowerCase().replace(' ', '')}">${ticket.priority}</span></td>
+          <td><span class="chip ${ticket.status.toLowerCase().replace(' ', '')}">${ticket.status}</span></td>
+          <td>${ticket.sla}</td>
+          <td>${ticket.aiConfidence}%</td>
+          <td><button class="btn btn-ghost" type="button" onclick="openTicket('${ticket.id}')">Open</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderInventoryCatalog() {
+      const rows = state.inventoryItems.map(item => {
+        const statusClass = item.quantity <= item.reorderLevel ? 'warning' : 'success';
+        return `
+          <tr>
+            <td><strong>${item.name}</strong><div class="small muted">${item.category}</div></td>
+            <td>${item.sku}</td>
+            <td>${item.warehouse}</td>
+            <td>${item.quantity}</td>
+            <td>${item.reorderLevel}</td>
+                  <td>$${Number(item.unitPrice || 0).toFixed(2)}</td>
+            <td>${item.supplier}</td>
+            <td><span class="chip ${statusClass}">${item.quantity <= item.reorderLevel ? 'Low stock' : 'Healthy'}</span></td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('inventoryTableBody').innerHTML = rows;
+    }
+
+    function renderAssets() {
+      const assets = [
+        { name: 'Printer PR-204', type: 'Printer', health: 72, incidents: 8, risk: 78, last: '21 days ago', location: 'Library' },
+        { name: 'Router RT-118', type: 'Router', health: 88, incidents: 5, risk: 42, last: '14 days ago', location: 'Block B' },
+        { name: 'Server SV-92', type: 'Server', health: 95, incidents: 2, risk: 16, last: '7 days ago', location: 'Data Center' },
+        { name: 'Lab Projector', type: 'Projector', health: 64, incidents: 9, risk: 74, last: '12 days ago', location: 'Room 204' },
+        { name: 'Laptop LT-301', type: 'Laptop', health: 84, incidents: 3, risk: 35, last: '9 days ago', location: 'Admin Block' },
+        { name: 'Firewall FW-9', type: 'Firewall', health: 91, incidents: 2, risk: 23, last: '5 days ago', location: 'Security Node' }
+      ];
+
+      document.getElementById('assetsGrid').innerHTML = assets.map(asset => `
+        <div class="asset-card">
+          <div class="asset-health" style="background: conic-gradient(${asset.health >= 80 ? 'var(--success)' : asset.health >= 60 ? 'var(--warning)' : 'var(--danger)'} 0deg ${asset.health * 3.6}deg, rgba(148,163,184,0.18) ${asset.health * 3.6}deg 360deg);">${asset.health}%</div>
+          <div class="small muted">${asset.type}</div>
+          <h4 style="margin: 8px 0;">${asset.name}</h4>
+          <ul class="stack">
+            <li class="list-row"><span>Location</span><span>${asset.location}</span></li>
+            <li class="list-row"><span>Incidents</span><span>${asset.incidents}</span></li>
+            <li class="list-row"><span>Failure risk</span><span>${asset.risk}%</span></li>
+            <li class="list-row"><span>Last maintenance</span><span>${asset.last}</span></li>
+          </ul>
+        </div>
+      `).join('');
+    }
+
+    function renderKnowledge() {
+      const articles = [
+        { title: 'Internet is slow', category: 'Network', rating: '4.8/5', steps: 'Check router, reboot edge node, validate congestion.' },
+        { title: 'Printer jam workflow', category: 'Hardware', rating: '4.6/5', steps: 'Clear queue, reseat cartridge and restart spooler.' },
+        { title: 'Finance portal lockout', category: 'Finance', rating: '4.7/5', steps: 'Reset MFA, clear browser cache, confirm tenant access.' },
+        { title: 'MFA challenge troubleshooting', category: 'Security', rating: '4.9/5', steps: 'Verify device trust, refresh challenge, call support if loop persists.' }
+      ];
+      document.getElementById('knowledgeTable').innerHTML = articles.map(article => `
+        <tr>
+          <td><strong>${article.title}</strong><div class="small muted">${article.steps}</div></td>
+          <td>${article.category}</td>
+          <td><span class="rating">★</span> ${article.rating}</td>
+        </tr>
+      `).join('');
+      document.getElementById('knowledgeInsights').innerHTML = [
+        'Most likely causes: Network congestion, router issue, device configuration.',
+        'Recommended article: Internet is slow',
+        'Retry self-healing route before creating a new ticket.'
+      ].map(item => `<div class="insight-item"><span>✦</span><div>${item}</div></div>`).join('');
+    }
+
+    function renderPredictions() {
+      const predictions = [
+        { name: 'Printer Failure', probability: 78, window: 'Next 24–48 hours', action: 'Schedule maintenance for high-risk devices.' },
+        { name: 'Network Congestion', probability: 64, window: 'Tomorrow', action: 'Rebalance edge traffic and confirm failover path.' },
+        { name: 'Hardware Issues', probability: 42, window: 'Next 7 days', action: 'Prestage spare projectors and replacement parts.' }
+      ];
+      document.getElementById('predictionGrid').innerHTML = predictions.map(item => `
+        <div class="panel">
+          <div class="small muted">${item.name}</div>
+          <div class="kpi-value" style="font-size: 1.9rem; margin: 12px 0 8px;">${item.probability}%</div>
+          <div class="small muted">Expected: ${item.window}</div>
+          <div class="small muted" style="margin-top: 12px;">Recommended action: ${item.action}</div>
+        </div>
+      `).join('');
+      document.getElementById('impactBars').innerHTML = [58, 74, 62, 88, 76, 64].map(value => `<div class="bar" style="height:${value}%"></div>`).join('');
+    }
+
+    function generateQrMatrix(seed) {
+      const size = 21;
+      const matrix = Array.from({ length: size }, () => Array(size).fill(0));
+      const finders = [
+        { x: 0, y: 0 },
+        { x: size - 7, y: 0 },
+        { x: 0, y: size - 7 }
+      ];
+
+      finders.forEach(({ x, y }) => {
+        for (let row = 0; row < 7; row++) {
+          for (let col = 0; col < 7; col++) {
+            const inBorder = row === 0 || row === 6 || col === 0 || col === 6;
+            const inCenter = row >= 2 && row <= 4 && col >= 2 && col <= 4;
+            matrix[y + row][x + col] = inBorder || inCenter ? 1 : 0;
+          }
+        }
+      });
+
+      for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+          if (matrix[row][col] !== 0) continue;
+          const val = ((row * 17 + col * 13 + seed.length * 29) % 7) < 3 ? 1 : 0;
+          matrix[row][col] = val;
+        }
+      }
+
+      return matrix;
+    }
+
+    function renderMeetingDetail(roomName = 'Boardroom A') {
+      const details = roomMeetings[roomName] || roomMeetings['Boardroom A'];
+      const container = document.getElementById('meetingDetail');
+      const slots = ['09:00', '09:30', '11:00', '13:30', '15:15'];
+      const room = roomData.find(item => item.name === roomName) || roomData[0];
+
+      const bookings = (roomBookingState.calendar[roomName] || []).map(entry => 
+        `<div class="slot-pill active">${entry.time} • ${entry.title}</div>`
+      ).join('');
+
+      container.innerHTML = `
+        <div class="meeting-header">
+          <strong>${roomName}</strong>
+          <span class="room-status ${room.status === 'Available' ? 'available' : 'busy'}">${room.status}</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-box">
+            <span class="label">Host</span>
+            <strong>${details.host}</strong>
+          </div>
+          <div class="info-box">
+            <span class="label">Agenda</span>
+            <strong>${details.agenda}</strong>
+          </div>
+          <div class="info-box">
+            <span class="label">Meeting ID</span>
+            <strong>${details.meetingId}</strong>
+          </div>
+          <div class="info-box">
+            <span class="label">Access</span>
+            <strong>${details.access}</strong>
+          </div>
+        </div>
+        <div>
+          <div class="small muted">Available time slots</div>
+          <div class="slot-row">
+            ${slots.map(slot => `<span class="slot-pill ${roomBookingState.calendar[roomName]?.some(booking => booking.time === slot) ? 'active' : ''}">${slot}</span>`).join('')}
+          </div>
+          <div class="small muted" style="margin-top:10px;">Booked agenda: ${bookings || '<span class="slot-pill">No bookings</span>'}</div>
+        </div>
+      `;
+    }
+
+    function renderQrPanel(roomName = 'Boardroom A') {
+      const room = roomData.find(item => item.name === roomName) || roomData[0];
+      const qrCode = document.getElementById('qrCode');
+      const qrRoomLabel = document.getElementById('qrRoomLabel');
+      const matrix = generateQrMatrix(room.qrId || room.name);
+      qrCode.innerHTML = matrix.map(row => row.map(cell => `<span class="qr-cell ${cell ? 'filled' : ''}"></span>`).join('')).join('');
+      qrRoomLabel.textContent = room.name;
+      renderMeetingDetail(roomName);
+    }
+
+    function renderRoomCards() {
+      const roomGrid = document.getElementById('roomGrid');
+      roomGrid.innerHTML = roomData.map(room => `
+        <div class="room-card ${room.name === 'Boardroom A' ? 'active' : ''}" data-room="${room.name}">
+          <div class="room-header">
+            <h4 class="room-title">${room.name}</h4>
+            <span class="room-status ${room.status === 'Available' ? 'available' : 'busy'}">${room.status}</span>
+          </div>
+          <div class="room-meta">
+            <span>${room.type}</span>
+            <span>${room.seats} seats</span>
+            <span>${room.floor}</span>
+          </div>
+          <div class="small muted">Next call: ${room.time}</div>
+        </div>
+      `).join('');
+
+      roomGrid.querySelectorAll('.room-card').forEach(card => {
+        card.addEventListener('click', () => {
+          roomGrid.querySelectorAll('.room-card').forEach(item => item.classList.remove('active'));
+          card.classList.add('active');
+          roomBookingState.activeRoom = card.dataset.room;
+          renderQrPanel(roomBookingState.activeRoom);
+        });
+      });
+
+      const selectedRoom = roomData.find(room => room.name === roomBookingState.activeRoom) || roomData[0];
+      roomBookingState.activeRoom = selectedRoom.name;
+      roomGrid.querySelectorAll('.room-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.room === selectedRoom.name);
+      });
+      renderQrPanel(selectedRoom.name);
+    }
+
+    function renderAutomation() {
+      const workflow = ['Ticket Priority = Critical', 'Notify Admin', 'Assign IT Manager', 'Start SLA Timer', 'Create Incident'];
+      const nodes = workflow.map((step, index) => `
+        <div class="flow-node">${step}</div>
+        ${index < workflow.length - 1 ? '<span class="flow-arrow">→</span>' : ''}
+      `).join('');
+      document.getElementById('automationFlow').innerHTML = nodes;
+    }
+
+    function renderTeam() {
+      const team = [
+        { name: 'Aisha Raman', dept: 'Network Ops', tickets: 184, time: '1.8h', rating: '4.9', badge: 'gold', title: 'SLA Champion' },
+        { name: 'Daniel Moss', dept: 'IT', tickets: 163, time: '2.1h', rating: '4.8', badge: 'silver', title: 'Fast Resolver' },
+        { name: 'Sara Chen', dept: 'Security', tickets: 156, time: '2.3h', rating: '4.7', badge: 'bronze', title: 'Customer Hero' }
+      ];
+      document.getElementById('teamGrid').innerHTML = team.map(member => `
+        <div class="team-card">
+          <div class="team-head">
+            <div class="avatar-lg">${member.name.split(' ').map(n => n[0]).slice(0,2).join('')}</div>
+            <span class="badge ${member.badge}">${member.title}</span>
+          </div>
+          <h4 style="margin: 12px 0 4px;">${member.name}</h4>
+          <div class="small muted">${member.dept}</div>
+          <ul class="stack" style="margin-top:12px;">
+            <li class="list-row"><span>Tickets resolved</span><span>${member.tickets}</span></li>
+            <li class="list-row"><span>Average time</span><span>${member.time}</span></li>
+            <li class="list-row"><span>SLA</span><span>96%</span></li>
+            <li class="list-row"><span>Customer rating</span><span>${member.rating}</span></li>
+          </ul>
+        </div>
+      `).join('');
+    }
+
+    function renderImpactList() {
+      document.getElementById('impactList').innerHTML = [
+        'Tickets resolved: 2,346 this quarter',
+        'AI-assisted resolutions: 541',
+        'Tickets avoided: 186 using self-healing guidance',
+        'Average resolution time: 2.4 hours',
+        'SLA compliance: 94.2%',
+        'User satisfaction: 92%'
+      ].map(item => `<li class="list-row"><span>${item.split(':')[0]}</span><span>${item.includes(':') ? item.split(':')[1].trim() : ''}</span></li>`).join('');
+    }
+
+    function renderNotifications() {
+      document.getElementById('notificationList').innerHTML = state.notifications.map(item => `<li class="list-row"><span>${item}</span><span>Now</span></li>`).join('');
+      document.getElementById('notificationBtn').dataset.count = state.notifications.length;
+    }
+
+    async function loadDataHistory() {
+      const tbody = document.getElementById('historyTableBody');
+      try {
+        const response = await fetch(`${state.apiBase}/history`);
+        if (!response.ok) throw new Error(`History API returned ${response.status}`);
+        const history = await response.json();
+        tbody.innerHTML = history.map(entry => `
+          <tr>
+            <td>${new Date(entry.createdAt).toLocaleString()}</td>
+            <td>${entry.kind}</td>
+            <td><code>${JSON.stringify(entry.input)}</code></td>
+            <td><code>${JSON.stringify(entry.output)}</code></td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" class="muted">No stored operations yet.</td></tr>';
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">${error.message}. Start the InventoryFlow backend to view saved history.</td></tr>`;
+      }
+    }
+
+    function renderAll() {
+      renderKPIs();
+      renderHealth();
+      renderDashboardTables();
+      renderAIInsights();
+      renderTicketTable();
+      renderInventoryCatalog();
+      renderAssets();
+      renderKnowledge();
+      renderPredictions();
+      renderRoomCards();
+      renderAutomation();
+      renderTeam();
+      renderImpactList();
+      renderNotifications();
+      document.getElementById('greetingText').textContent = state.loggedIn ? 'Inventory operations overview' : 'Please log in';
+      document.getElementById('sidebarUser').textContent = state.loggedIn ? 'Admin User' : 'Guest';
+      document.getElementById('sidebarRole').textContent = state.loggedIn ? 'Admin' : 'Not signed in';
+      document.getElementById('avatarCircle').textContent = 'A';
+      document.getElementById('incidentSla').textContent = '00:42:17';
+    }
+
+    function getSlaForPriority(priority) {
+      const map = { 'Critical': '00:42:17', 'High': '03:12:00', 'Medium': '09:00:00', 'Low': '18:00:00' };
+      return map[priority] || '09:00:00';
+    }
+
+    function openModal() { document.getElementById('ticketModal').classList.add('open'); }
+    function closeModal() { document.getElementById('ticketModal').classList.remove('open'); }
+
+    document.getElementById('loginForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+      if (email && password) {
+        state.loggedIn = true;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appShell').classList.remove('hidden');
+        renderAll();
+        showToast('Welcome back to InventoryFlow AI', 'success');
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      state.loggedIn = false;
+      document.getElementById('appShell').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      showToast('Logged out successfully', 'info');
+    });
+
+    document.getElementById('notificationBtn').addEventListener('click', () => {
+      showToast('4 new notifications available', 'info');
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('light');
+      state.theme = document.body.classList.contains('light') ? 'light' : 'dark';
+      document.getElementById('themeToggle').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+      showToast(`Theme switched to ${state.theme} mode`, 'success');
+    });
+
+    document.getElementById('runDemoBtn').addEventListener('click', () => {
+      const newIncident = {
+        id: 'INV1061',
+        title: 'Critical packaging shortage',
+        user: 'Demo User',
+        department: 'Operations',
+        category: 'Packaging',
+        priority: 'Critical',
+        status: 'Open',
+        assigned: 'AI Dispatch',
+        created: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        updated: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        sla: '00:20:00',
+        location: 'Distribution Center',
+        asset: 'Carton Pack 8x8',
+        aiConfidence: 96,
+        quantity: 126,
+        reorderLevel: 420,
+        supplier: 'Boxline Supply',
+        leadTime: '6 days',
+        description: 'Packaging stock is critically low and could delay outbound shipments this week.'
+      };
+      state.tickets.unshift(newIncident);
+      state.inventoryItems.unshift({
+        id: `SKU-${Date.now().toString().slice(-5)}`,
+        name: newIncident.asset,
+        sku: `PKG-${Date.now().toString().slice(-6)}`,
+        category: newIncident.category,
+        quantity: newIncident.quantity,
+        reorderLevel: newIncident.reorderLevel,
+        warehouse: newIncident.location,
+        supplier: newIncident.supplier,
+        status: 'Low stock'
+      });
+      saveTickets();
+      saveInventory();
+      renderAll();
+      showToast('Demo stock alert created and analyzed by AI', 'success');
+      openTicket(newIncident.id);
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('ticketModal').addEventListener('click', (event) => {
+      if (event.target.id === 'ticketModal') closeModal();
+    });
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('meetingModal').classList.remove('open');
+        document.querySelectorAll('.nav-btn').forEach(item => item.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+        document.getElementById(btn.dataset.view).classList.add('active');
+      });
+    });
+
+    document.getElementById('aiSubmitBtn').addEventListener('click', sendAIMessage);
+    document.getElementById('aiPromptInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') sendAIMessage();
+    });
+
+    document.getElementById('ticketAnalysisForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const result = document.getElementById('aiAnalysisResult');
+      const content = document.getElementById('analysisContent');
+      const input = Object.fromEntries(form.entries());
+      input.quantity = Number(input.quantity);
+      input.reorderLevel = Number(input.reorderLevel);
+      input.leadTimeDays = Number(input.leadTimeDays);
+      fetch(`${state.apiBase}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input)
+      }).then(async response => {
+        const analysis = await response.json();
+        if (!response.ok) throw new Error(analysis.error || 'Analysis failed');
+        content.innerHTML = `
+          <div class="stack">
+            <div class="list-row"><span>Item</span><span>${analysis.item}</span></div>
+            <div class="list-row"><span>Stock risk</span><span>${analysis.risk}</span></div>
+            <div class="list-row"><span>Priority</span><span>${analysis.priority}</span></div>
+            <div class="list-row"><span>Confidence</span><span>${Math.round(analysis.confidence * 100)}%</span></div>
+            <div class="list-row"><span>Recommended action</span><span>${analysis.recommendation}</span></div>
+            <div class="small muted">${analysis.model}</div>
+          </div>
+        `;
+        result.classList.remove('hidden');
+        showToast(`Analysis saved for ${analysis.item}`, 'success');
+      }).catch(error => showToast(error.message || 'Start the backend to save analysis results', 'danger'));
+    });
+
+    document.getElementById('inventoryItemForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const item = {
+        id: `SKU-${Date.now()}`,
+        name: String(form.get('name')).trim(),
+        sku: String(form.get('sku')).trim(),
+        category: String(form.get('category')).trim(),
+        warehouse: String(form.get('warehouse')).trim(),
+        quantity: Number(form.get('quantity')),
+        reorderLevel: Number(form.get('reorderLevel')),
+        supplier: String(form.get('supplier')).trim(),
+        leadTimeDays: Number(form.get('leadTimeDays')),
+        unitPrice: Number(form.get('unitPrice'))
+      };
+      state.inventoryItems.push(item);
+      const storedInDatabase = await saveInventory();
+      renderAll();
+      event.target.reset();
+      showToast(storedInDatabase ? 'Inventory item stored in SQLite' : 'Item saved in this browser; SQLite sync is unavailable', storedInDatabase ? 'success' : 'danger');
+    });
+
+    document.getElementById('trainModelBtn').addEventListener('click', async () => {
+      const result = document.getElementById('modelTestResult');
+      result.classList.remove('hidden');
+      result.textContent = 'Training and evaluating against saved inventory...';
+      try {
+        const response = await fetch(`${state.apiBase}/model/train-test`, { method: 'POST' });
+        const report = await response.json();
+        if (!response.ok) throw new Error(report.error || 'Model training failed');
+        result.innerHTML = `
+          <div class="mini-stat">
+            <strong>${report.algorithm}</strong>
+            <div class="list-row"><span>Training rows</span><span>${report.trainingRows}</span></div>
+            <div class="list-row"><span>Test rows</span><span>${report.testRows}</span></div>
+            <div class="list-row"><span>Holdout accuracy</span><span>${(report.accuracy * 100).toFixed(1)}%</span></div>
+            <div class="small muted">${report.note}</div>
+          </div>
+        `;
+        showToast('Model trained and holdout test completed', 'success');
+      } catch (error) {
+        result.textContent = error.message;
+      }
+    });
+
+    document.getElementById('ticketSearch').addEventListener('input', (event) => {
+      state.searchQuery = event.target.value.trim();
+      renderTicketTable();
+    });
+
+    document.getElementById('ticketStatusFilter').addEventListener('change', (event) => {
+      state.statusFilter = event.target.value;
+      renderTicketTable();
+    });
+
+    document.getElementById('ticketPriorityFilter').addEventListener('change', (event) => {
+      state.priorityFilter = event.target.value;
+      renderTicketTable();
+    });
+
+    document.getElementById('ticketDepartmentFilter').addEventListener('change', (event) => {
+      state.departmentFilter = event.target.value;
+      renderTicketTable();
+    });
+
+    document.getElementById('sortBtn').addEventListener('click', () => {
+      state.sortDirection = state.sortDirection === 'desc' ? 'asc' : 'desc';
+      document.getElementById('sortBtn').textContent = state.sortDirection === 'desc' ? 'Sort: Newest' : 'Sort: Oldest';
+      renderTicketTable();
+    });
+
+    document.getElementById('globalSearch').addEventListener('input', (event) => {
+      const value = event.target.value.trim().toLowerCase();
+      if (!value) {
+        renderTicketTable();
+        return;
+      }
+      const results = state.tickets.filter(ticket => [ticket.title, ticket.user, ticket.department, ticket.category, ticket.location].join(' ').toLowerCase().includes(value));
+      showToast(`Search results: ${results.length} matches`, 'info');
+      if (results[0]) openTicket(results[0].id);
+    });
+
+    document.getElementById('profileForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      showToast('Profile saved successfully', 'success');
+    });
+
+    document.getElementById('refreshHistoryBtn').addEventListener('click', loadDataHistory);
+
+    document.getElementById('addRoomBtn').addEventListener('click', async () => {
+      const nextIndex = roomData.length + 1;
+      const newRoomName = `Meeting Room ${nextIndex}`;
+      roomData.push({
+        name: newRoomName,
+        type: 'Hybrid',
+        seats: 10,
+        status: 'Available',
+        time: 'Next available',
+        floor: `Floor ${Math.min(6, nextIndex + 1)}`,
+        qrId: `ROOM-${nextIndex}`
+      });
+      roomMeetings[newRoomName] = {
+        host: 'Operations Desk',
+        agenda: 'Cross-team business sync',
+        attendees: `${Math.max(4, nextIndex * 2)} invited`,
+        duration: '30 min',
+        nextSlot: 'Next available',
+        access: 'QR + meeting code',
+        meetingId: `ROOM-${nextIndex}`
+      };
+      if (!roomBookingState.calendar[newRoomName]) roomBookingState.calendar[newRoomName] = [];
+      renderRoomCards();
+      await syncRoomsToBackend();
+      showToast('New business room added', 'success');
+    });
+
+    document.getElementById('startRoomCallBtn').addEventListener('click', () => {
+      const activeRoom = document.querySelector('.room-card.active')?.dataset.room || 'Boardroom A';
+      roomBookingState.activeRoom = activeRoom;
+      document.getElementById('meetingModalTitle').textContent = `${activeRoom} booking`;
+      document.getElementById('meetingModal').classList.add('open');
+      renderRoomCards();
+      showToast(`Business call setup for ${activeRoom}`, 'success');
+    });
+
+    document.getElementById('shareRoomInviteBtn').addEventListener('click', () => {
+      const activeRoom = document.querySelector('.room-card.active')?.dataset.room || 'Boardroom A';
+      showToast(`Invite sent for ${activeRoom}`, 'info');
+    });
+
+    document.getElementById('closeMeetingModalBtn').addEventListener('click', () => {
+      document.getElementById('meetingModal').classList.remove('open');
+    });
+
+    document.getElementById('meetingModal').addEventListener('click', (event) => {
+      if (event.target.id === 'meetingModal') event.target.classList.remove('open');
+    });
+
+    document.getElementById('confirmBookingBtn').addEventListener('click', async () => {
+      const activeRoom = roomBookingState.activeRoom || 'Boardroom A';
+      const title = document.getElementById('meetingTitleInput').value || 'Business call';
+      const date = document.getElementById('meetingDateInput').value || '2026-09-10';
+      const time = document.getElementById('meetingTimeInput').value || '09:30';
+      const duration = document.getElementById('meetingDurationSelect').value || '45 min';
+      const access = document.getElementById('meetingAccessSelect').value || 'QR + passcode';
+
+      if (!roomBookingState.calendar[activeRoom]) roomBookingState.calendar[activeRoom] = [];
+      roomBookingState.calendar[activeRoom].push({ date, time, duration, title });
+      roomMeetings[activeRoom] = {
+        ...roomMeetings[activeRoom],
+        agenda: title,
+        duration,
+        nextSlot: time,
+        access
+      };
+      roomData.forEach(room => {
+        if (room.name === activeRoom) {
+          room.status = 'Busy';
+          room.time = time;
+        }
+      });
+
+      renderRoomCards();
+      await syncRoomsToBackend();
+      document.getElementById('meetingModal').classList.remove('open');
+      showToast(`Booking confirmed for ${activeRoom}`, 'success');
+    });
+
+    async function initializeApp() {
+      await loadRoomsFromBackend();
+      await fetchInventoryFromAPI();
+      await fetchTicketsFromAPI();
+      renderAll();
+      await loadDataHistory();
+    }
+
+    initializeApp();
+  </script>
+</body>
+</html>

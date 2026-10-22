@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: inventoryflow-ai-api
+    runtime: python
+    plan: starter
+    buildCommand: "python --version"
+    startCommand: "python 'inventory items.py'"
+    healthCheckPath: /api/health
+    envVars:
+      - key: INVENTORYFLOW_DB
+        value: /var/data/inventoryflow.sqlite3
+      - key: PYTHON_VERSION
+        value: 3.12.10
+    disk:
+      name: inventoryflow-data
+      mountPath: /var/data
+      sizeGB: 1

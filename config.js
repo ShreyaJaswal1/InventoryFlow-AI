@@ -1,0 +1,1 @@
+window.INVENTORYFLOW_API_BASE = "https://REPLACE-WITH-YOUR-RENDER-SERVICE.onrender.com/api";
